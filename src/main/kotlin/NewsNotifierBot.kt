@@ -1,31 +1,15 @@
+import models.News
+import models.SubscribersDispatcher
+import utils.Logger.Companion.log
 import org.telegram.telegrambots.api.methods.send.SendMessage
 import org.telegram.telegrambots.api.objects.Chat
 import org.telegram.telegrambots.api.objects.EntityType
 import org.telegram.telegrambots.api.objects.Update
 import org.telegram.telegrambots.api.objects.User
 import org.telegram.telegrambots.bots.TelegramLongPollingBot
-import java.io.FileOutputStream
-import java.io.OutputStreamWriter
-import java.io.PrintWriter
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 class NewsNotifierBot : TelegramLongPollingBot() {
-    private val logWriter = PrintWriter(OutputStreamWriter(FileOutputStream("botLog-${getStringTime()}.txt")))
-
-    private fun getStringTime() = LocalDateTime.now().format(DateTimeFormatter.ofPattern("uuuu-MM-dd--kk-mm"))
-
-    private fun log(update: Update, text: String) = log(update.message.from.userName, text)
-    private fun log(text: String) = log("????????????????????", text)
-
-    @Synchronized
-    private fun log(username: String, text: String) {
-        val msg = "${getStringTime()} -- ${String.format("%-20s", username)} -- $text"
-        logWriter.println(msg)
-        println(msg)
-    }
-
-    val subscribers = Subscribers()
+    val subscribers = SubscribersDispatcher()
 
     override fun getBotToken(): String {
         return "460715821:AAErvovpexiD6Kb2mMluAtCoJKu3ER14ux8"
@@ -51,14 +35,9 @@ class NewsNotifierBot : TelegramLongPollingBot() {
         sendMessage(SendMessage(update.message.chatId.toString(), subscribers.getSubscribersString()))
     }
 
-    fun announceNewData(news: List<News>) {
-        log("Data is announced: " + news)
-        if (news.isEmpty()) {
-            // todo more seldom pls
-            subscribers.sendAll(this, "no new news")
-            return
-        }
-        subscribers.sendAll(this, news)
+    fun announceNewData(newNews: List<List<News>>, allNews: List<List<News>>) {
+        log("For clients ${subscribers.getSubscribersString()} ${newNews.stream().map { it.size }.reduce({ a, b -> a + b }).get()} new news are dispatched")
+        subscribers.sendAll(this, newNews, allNews)
     }
 
     override fun onUpdateReceived(update: Update?) {

@@ -15,4 +15,6 @@ fun main(args: Array<String>) {
     }
 
     val server = NewsNotifierServer(bot)
+    server.start()
+//    server.checkNewNews()
 }
