@@ -18,8 +18,9 @@ class Logger {
 
         @Synchronized
         fun log(username: String, text: String) {
-            val msg = "${getStringTime()} -- ${String.format("%-20s", username)} -- $text"
+            val msg = "${getStringTime()} -- ${String.format("%-30s", username)} -- $text"
             logWriter.println(msg)
+            logWriter.flush()
             println(msg)
         }
     }

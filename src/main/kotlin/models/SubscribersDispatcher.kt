@@ -5,12 +5,12 @@ import NewsNotifierBot
 
 
 class SubscribersDispatcher {
+    //todo: serialize users & substrings, mb create class for user
     val chatIds = mutableSetOf<String>()
     val usernames = mutableSetOf<String>()
 
     val targetSubstrings = mutableMapOf<String, MutableList<String>>()
 
-    val ONBOARDING_SIZE = 3
     val onboardingUsers = mutableSetOf<String>()
 
     val newsSources = listOf(

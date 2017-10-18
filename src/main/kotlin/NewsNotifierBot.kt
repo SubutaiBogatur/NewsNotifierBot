@@ -40,6 +40,26 @@ class NewsNotifierBot : TelegramLongPollingBot() {
         subscribers.sendAll(this, newNews, allNews)
     }
 
+    val helpMessage = """
+        The bot will notify you about new news, which are posted in a list of sources.
+        Current list of sources:
+        ${subscribers.newsSources}.
+
+        You can choose news you're interested in by providing a bot list of substrings. Only news containing any of the substrings will be sent to you.
+
+        Commands:
+        /s = subscribe
+        /u = unsubscribe
+        /ssls = list current substrings
+        /ssa = add substring
+        /ssr = remove substring
+        /help = show this message
+    """.trimIndent()
+
+    fun help(update: Update) {
+        sendMessage(SendMessage(update.message.chatId.toString(), helpMessage))
+    }
+
     override fun onUpdateReceived(update: Update?) {
         if (update == null) {
             log("WARNING: received onUpdate call with null")
@@ -52,6 +72,8 @@ class NewsNotifierBot : TelegramLongPollingBot() {
                 "/s" -> subscribe(update.message.from, update.message.chat)
                 "/u" -> unsubscribe(update.message.from, update.message.chat)
                 "/ls" -> listSubscribers(update)
+                "/help" -> help(update)
+                "/start" -> sendMessage(SendMessage(update.message.chatId.toString(), "Consider entering /help command"))
             }
         }
     }

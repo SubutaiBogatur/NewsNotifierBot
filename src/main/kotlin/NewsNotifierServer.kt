@@ -11,7 +11,7 @@ class NewsNotifierServer(val bot: NewsNotifierBot) {
 
     val dataProvider = NewsProvider()
 
-    val CACHE_SIZE = 70
+    val CACHE_SIZE = 70 // per each address
     val cache = mutableListOf<MutableSet<News>>()
 
     init {
@@ -21,6 +21,7 @@ class NewsNotifierServer(val bot: NewsNotifierBot) {
     }
 
     fun checkNewNews() {
+        Logger.log(loggerId, "checkNew news called")
         val allNewNews = dataProvider.getCurrentNews(bot.subscribers.newsSources)
         val newNews = mutableListOf<MutableList<News>>()
         for (i in 0 until allNewNews.size) {
@@ -38,15 +39,16 @@ class NewsNotifierServer(val bot: NewsNotifierBot) {
     /**
      * Start repeating calls to provide new news to bot
      */
-    fun start() {
-        Logger.log(loggerId, "server started")
+    fun start(periodInSeconds: Long) {
+        Logger.log(loggerId, "server started with period: $periodInSeconds")
+        //todo: maybe should schedule repeating notification about server still being active (both for me & other users)
         tpe.scheduleAtFixedRate({
             try {
                 checkNewNews()
             } catch (t: Throwable) {
-                println(t)
+                Logger.log(loggerId, t.toString())
             }
-        }, 0, 5, TimeUnit.SECONDS)
+        }, 0, periodInSeconds, TimeUnit.SECONDS)
     }
 
     fun stop() {

@@ -10,7 +10,7 @@ import java.net.URISyntaxException
 import javax.xml.parsers.DocumentBuilderFactory
 
 class NewsProvider {
-    private val loggerId = this.javaClass.name
+    private val loggerId = this.javaClass.canonicalName
 
     fun getCurrentNews(addresses: List<String>): List<List<News>> {
         fun Element.getText(childElementName: String)
@@ -21,6 +21,7 @@ class NewsProvider {
         for (address in addresses) {
             val curAddr = mutableListOf<News>()
             try {
+                Logger.log(loggerId, "started getting for $address")
                 val xmlDoc: Document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(address)
                 val items = xmlDoc.documentElement.getElementsByTagName("item")
 
@@ -37,9 +38,11 @@ class NewsProvider {
                                     address)
                         }
             } catch (e: URISyntaxException) {
-                Logger.log(loggerId, "uri syntax exception: " + e)
+                Logger.log(loggerId, "uri syntax exception: $e")
             } catch (e: IOException) {
-                Logger.log(loggerId, "io exception: " + e)
+                Logger.log(loggerId, "io exception: $e")
+            } catch (t: Throwable) {
+                Logger.log(loggerId, "smth strange cathed: $t")
             }
             ret.add(curAddr)
         }
