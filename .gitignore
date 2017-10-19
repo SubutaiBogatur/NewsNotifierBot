@@ -1,0 +1,9 @@
+# no logging:
+botLog*
+
+# no build files:
+build/*
+gradle/*
+.gradle
+.idea
+gradlew*
