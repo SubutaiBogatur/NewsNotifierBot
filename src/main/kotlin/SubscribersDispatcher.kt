@@ -1,7 +1,5 @@
-package models
-
 import org.telegram.telegrambots.api.methods.send.SendMessage
-import NewsNotifierBot
+import models.News
 
 
 class SubscribersDispatcher {

@@ -7,7 +7,7 @@ data class News(val title: String,
                 val providerUrl: String) {
 
     fun getMessage(): String {
-        val sb: StringBuilder = StringBuilder()
+        val sb = StringBuilder()
         sb.append(title)
         sb.append("\n\n")
         sb.append("Published on $pubDate. RSS Feed: $providerUrl")
@@ -19,7 +19,7 @@ data class News(val title: String,
     }
 
     fun getMessage(encounteredSubstring: String): String {
-        val sb: StringBuilder = StringBuilder()
+        val sb = StringBuilder()
         sb.append("Word found: $encounteredSubstring\n")
         sb.append(getMessage())
         return sb.toString()

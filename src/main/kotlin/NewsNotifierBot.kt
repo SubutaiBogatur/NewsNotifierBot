@@ -1,5 +1,4 @@
 import models.News
-import models.SubscribersDispatcher
 import utils.Logger.Companion.log
 import org.telegram.telegrambots.api.methods.send.SendMessage
 import org.telegram.telegrambots.api.objects.Chat
