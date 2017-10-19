@@ -1,6 +1,7 @@
 import org.telegram.telegrambots.api.methods.send.SendMessage
 import models.News
 import models.Subscriber
+import org.telegram.telegrambots.api.objects.Update
 import utils.Logger
 import java.io.*
 
@@ -66,7 +67,6 @@ class SubscribersDispatcher {
                         subscriber.substrings.forEach({
                             if (news.title.contains(it, ignoreCase = true) || news.description.contains(it, ignoreCase = true)) {
                                 metSubstrings.put(news, it)
-                                return
                             }
                         })
                     }
@@ -92,6 +92,12 @@ class SubscribersDispatcher {
     }
 
     @Synchronized
+    fun listSubstrings(bot: NewsNotifierBot, chatId: String) {
+        val substrings = subscribers.get(chatId)?.substrings?.toString() ?: return
+        bot.sendMessage(SendMessage(chatId, "Your substrings:\n$substrings"))
+    }
+
+    @Synchronized
     fun addSubstring(chatId: String, str: String) {
         subscribers.get(chatId)?.substrings?.add(str)
         storeSubscribers()
@@ -100,6 +106,12 @@ class SubscribersDispatcher {
     @Synchronized
     fun removeSubstring(chatId: String, str: String) {
         subscribers.get(chatId)?.substrings?.remove(str)
+        storeSubscribers()
+    }
+
+    @Synchronized
+    fun removeAllSubstrings(chatId: String) {
+        subscribers.get(chatId)?.substrings?.clear()
         storeSubscribers()
     }
 

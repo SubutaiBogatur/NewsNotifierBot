@@ -14,14 +14,24 @@ val helpMessage = """
         $newsSources.
 
         You can choose news you're interested in by providing a bot list of substrings. Only news containing any of the substrings will be sent to you.
+        If no substrings are provided, all news are sent to you.
 
         Commands:
         /s = subscribe
         /u = unsubscribe
-        /ssls = list current substrings
-        /ssa = add substring
-        /ssr = remove substring
+        /ls = list current substrings
+        /as = add substring
+        /rs = remove substring
+        /rm-rf = remove all substrings
         /help = show this message
+
+        For commands manipulating substrings, substrings should be provided in quotes. Moreover, when looking for occurrences of substrings in news, case is ignored.
+        eg:
+        /as "America will be great again"
+        /as "YNDX"
+        then
+        /ls will print
+        [america will be great again, yndx]
 
         Bot was created by Aleksandr Tukallo and written in Kotlin
     """.trimIndent()
