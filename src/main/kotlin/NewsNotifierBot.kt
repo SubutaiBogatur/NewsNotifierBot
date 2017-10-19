@@ -6,6 +6,7 @@ import org.telegram.telegrambots.api.objects.EntityType
 import org.telegram.telegrambots.api.objects.Update
 import org.telegram.telegrambots.api.objects.User
 import org.telegram.telegrambots.bots.TelegramLongPollingBot
+import utils.Logger
 
 class NewsNotifierBot : TelegramLongPollingBot() {
     val subscribersDispatcher = SubscribersDispatcher()
@@ -14,24 +15,33 @@ class NewsNotifierBot : TelegramLongPollingBot() {
     override fun getBotUsername() = "NewsNotifierBot"
 
     override fun onUpdateReceived(update: Update?) {
-        if (update == null) {
-            log("WARNING: received onUpdate call with null")
-            return
-        }
-        log(update, update.message.text)
-
-        if (update.message.isCommand) {
-            when (update.message.entities.first { it.type == EntityType.BOTCOMMAND }.text) {
-                "/s" -> subscribe(update.message.from, update.message.chat)
-                "/u" -> unsubscribe(update.message.from, update.message.chat)
-                "/lsu" -> listSubscribers(update)
-                "/help" -> help(update)
-                "/start" -> sendMessage(SendMessage(update.message.chatId.toString(), "Consider entering /help command"))
-                "/ls" -> listSubstrings(update)
-                "/as" -> addSubstring(update)
-                "/rs" -> removeSubstring(update)
-                "/rmrf" -> removeAllSubstrings(update)
+        try {
+            if (update == null) {
+                log("WARNING: received onUpdate call with null")
+                return
             }
+
+            if (update.message.from.userName == null) {
+                sendMessage(SendMessage(update.message.chatId, "Sorry, but to interact with the bot your username should be not null"))
+            }
+
+            log(update, update.message.text)
+
+            if (update.message.isCommand) {
+                when (update.message.entities.first { it.type == EntityType.BOTCOMMAND }.text) {
+                    "/s" -> subscribe(update.message.from, update.message.chat)
+                    "/u" -> unsubscribe(update.message.from, update.message.chat)
+                    "/lsu" -> listSubscribers(update)
+                    "/help" -> help(update)
+                    "/start" -> sendMessage(SendMessage(update.message.chatId.toString(), "Consider entering /help command"))
+                    "/ls" -> listSubstrings(update)
+                    "/as" -> addSubstring(update)
+                    "/rs" -> removeSubstring(update)
+                    "/rmrf" -> removeAllSubstrings(update)
+                }
+            }
+        } catch (t: Throwable) {
+            Logger.Companion.log("CRITICAL~ERROR", t.toString())
         }
     }
 
