@@ -1,73 +1,126 @@
 import org.telegram.telegrambots.api.methods.send.SendMessage
 import models.News
+import models.Subscriber
+import utils.Logger
+import java.io.*
 
 
 class SubscribersDispatcher {
-    //todo: serialize users & substrings, mb create class for user
-    val chatIds = mutableSetOf<String>()
-    val usernames = mutableSetOf<String>()
 
-    val targetSubstrings = mutableMapOf<String, MutableList<String>>()
+    val subscribers: MutableMap<String, Subscriber> // chatId -> subscriber
+    val onboardingSubscribers = mutableMapOf<String, Subscriber>() // chatId -> subscriber
 
-    val onboardingUsers = mutableSetOf<String>()
 
-    val newsSources = listOf(
-            "http://www.sfgate.com/rss/feed/Business-and-Technology-News-448.php",
-            "http://www.sfgate.com/bayarea/feed/Bay-Area-News-429.php",
-            "http://www.sfgate.com/rss/feed/Top-News-Stories-595.php",
-            "http://www.latimes.com/local/rss2.0.xml"
-    )
-
+    /**
+     * Add new subscriber and return true if it was added
+     */
     @Synchronized
     fun addSubscriber(chatId: String, name: String): Boolean {
-        chatIds.add(chatId)
-        onboardingUsers.add(chatId)
-        return usernames.add(name)
+        if (subscribers.containsKey(chatId)) {
+            return false
+        }
+
+        val sub = Subscriber(chatId, name)
+        subscribers.put(chatId, sub)
+        onboardingSubscribers.put(chatId, sub)
+        storeSubscribers()
+        return true
     }
 
+    /**
+     * Return true if subscriber was removed
+     */
     @Synchronized
-    fun removeSubscriber(chatId: String, name: String): Boolean {
-        chatIds.remove(chatId)
-        onboardingUsers.remove(chatId)
-        return usernames.remove(name)
+    fun removeSubscriber(chatId: String): Boolean {
+        if (!subscribers.containsKey(chatId)) {
+            return false
+        }
+        onboardingSubscribers.remove(chatId)
+        subscribers.remove(chatId)
+        storeSubscribers()
+        return true
     }
 
     @Synchronized
     fun sendAll(bot: NewsNotifierBot, text: String) {
-        chatIds.forEach({ bot.sendMessage(SendMessage(it, text)) })
+        subscribers.forEach({ (_, sub) -> bot.sendMessage(SendMessage(sub.chatId, text)) })
     }
 
     @Synchronized
-    fun sendAll(bot: NewsNotifierBot, newNews: List<List<News>>, newsAll: List<List<News>>) {
-        for (chatId in chatIds) {
-            if (chatId in onboardingUsers) {
-                //todo: onboarding
-                bot.sendMessage(SendMessage(chatId, "Onboarding will be implemented later, here is one msg for you:"))
-                bot.sendMessage(SendMessage(chatId, newsAll[0][0].getMessage()))
-            } else {
-                //todo: check for substrings
-                for (newsFromOneAddress in newNews) {
-                    for (news in newsFromOneAddress) {
-                        bot.sendMessage(SendMessage(chatId, news.getMessage()))
+    fun sendAll(bot: NewsNotifierBot, newNews: List<List<News>>) {
+        for (entries in subscribers) {
+            val subscriber = entries.value
+
+            if (subscriber.chatId in onboardingSubscribers) {
+                bot.sendMessage(SendMessage(subscriber.chatId, utils.onboardingMessage))
+            }
+
+            for (newsFromOneAddress in newNews) {
+                if (subscriber.substrings.isEmpty()) {
+                    newsFromOneAddress.forEach {
+                        bot.sendMessage(SendMessage(subscriber.chatId, it.getMessage("you are subscribed to all the substrings")))
+                    }
+                } else {
+                    val metSubstrings = mutableMapOf<News, String>() // title -> first encountered substring
+                    newsFromOneAddress.forEach { news ->
+                        subscriber.substrings.forEach({
+                            if (news.title.contains(it, ignoreCase = true) || news.description.contains(it, ignoreCase = true)) {
+                                metSubstrings.put(news, it)
+                                return
+                            }
+                        })
+                    }
+                    // now the map contains all the filtered news and corresponding substring for them
+                    for ((news, substring) in metSubstrings) {
+                        bot.sendMessage(SendMessage(subscriber.chatId, news.getMessage(substring)))
                     }
                 }
             }
         }
-        onboardingUsers.clear()
+        onboardingSubscribers.clear()
     }
 
+    @Synchronized
     fun getSubscribersString(): String {
-        return usernames.toString()
+        val sb = StringBuilder()
+        sb.append("[")
+        for ((_, sub) in subscribers) {
+            sb.append("${sub.username}, ")
+        }
+        sb.append(("]"))
+        return sb.toString()
     }
 
     @Synchronized
     fun addSubstring(chatId: String, str: String) {
-        targetSubstrings.compute(chatId, { _, ls -> ls?.apply { add(str) } ?: mutableListOf(str) })
+        subscribers.get(chatId)?.substrings?.add(str)
+        storeSubscribers()
     }
 
     @Synchronized
     fun removeSubstring(chatId: String, str: String) {
-        targetSubstrings.compute(chatId, { _, ls -> ls?.apply { remove(str) } ?: mutableListOf() })
+        subscribers.get(chatId)?.substrings?.remove(str)
+        storeSubscribers()
+    }
+
+    init {
+        //let's load subscribers from memory
+        var subs: MutableMap<String, Subscriber> = mutableMapOf()
+        try {
+            ObjectInputStream(FileInputStream("stored-subscribers"))
+                    .use { subs = it.readObject() as MutableMap<String, Subscriber> }
+        } catch (e: Exception) {
+            Logger.log(e.toString())
+        }
+        subscribers = subs
+    }
+
+    fun storeSubscribers() {
+        try {
+            ObjectOutputStream(FileOutputStream("stored-subscribers")).use { it.writeObject(subscribers) }
+        } catch (e: IOException) {
+            Logger.log(e.toString())
+        }
     }
 }
 

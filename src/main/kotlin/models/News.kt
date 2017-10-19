@@ -1,8 +1,8 @@
 package models
 
 data class News(val title: String,
+                val description: String,
                 val link: String,
-                val descripition: String,
                 val pubDate: String,
                 val providerUrl: String) {
 
@@ -14,7 +14,7 @@ data class News(val title: String,
         sb.append("\n\n")
         sb.append(link)
         sb.append("\n\n")
-        sb.append("Description: $descripition")
+        sb.append("Description: $description")
         return sb.toString()
     }
 

@@ -25,7 +25,7 @@ class NewsNotifierBot : TelegramLongPollingBot() {
     }
 
     private fun unsubscribe(user: User, chat: Chat) {
-        val unsubscribed = subscribers.removeSubscriber(chat.id.toString(), user.userName)
+        val unsubscribed = subscribers.removeSubscriber(chat.id.toString())
         log(user.userName, "unsubscribed ${if (!unsubscribed) "though wasn't subscribed" else ""}")
         sendMessage(SendMessage(chat.id.toString(), "You are unsubscribed"))
     }
@@ -34,29 +34,15 @@ class NewsNotifierBot : TelegramLongPollingBot() {
         sendMessage(SendMessage(update.message.chatId.toString(), subscribers.getSubscribersString()))
     }
 
-    fun announceNewData(newNews: List<List<News>>, allNews: List<List<News>>) {
+    fun announceNewData(newNews: List<List<News>>) {
         log("For clients ${subscribers.getSubscribersString()} ${newNews.stream().map { it.size }.reduce({ a, b -> a + b }).get()} new news are dispatched")
-        subscribers.sendAll(this, newNews, allNews)
+        subscribers.sendAll(this, newNews)
     }
 
-    val helpMessage = """
-        The bot will notify you about new news, which are posted in a list of sources.
-        Current list of sources:
-        ${subscribers.newsSources}.
 
-        You can choose news you're interested in by providing a bot list of substrings. Only news containing any of the substrings will be sent to you.
-
-        Commands:
-        /s = subscribe
-        /u = unsubscribe
-        /ssls = list current substrings
-        /ssa = add substring
-        /ssr = remove substring
-        /help = show this message
-    """.trimIndent()
 
     fun help(update: Update) {
-        sendMessage(SendMessage(update.message.chatId.toString(), helpMessage))
+        sendMessage(SendMessage(update.message.chatId.toString(), utils.helpMessage))
     }
 
     override fun onUpdateReceived(update: Update?) {

@@ -1,6 +1,9 @@
 # no logging:
 botLog*
 
+# no serialized files:
+stored-subscribers
+
 # no build files:
 build/*
 gradle/*
