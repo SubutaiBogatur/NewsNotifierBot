@@ -32,8 +32,8 @@ class NewsProvider {
                         .mapTo(curAddr) {
                             News(
                                     it.getText("title"),
-                                    it.getText("link"),
                                     it.getText("description"),
+                                    it.getText("link"),
                                     it.getText("pubDate"),
                                     address)
                         }
@@ -42,7 +42,7 @@ class NewsProvider {
             } catch (e: IOException) {
                 Logger.log(loggerId, "io exception: $e")
             } catch (t: Throwable) {
-                Logger.log(loggerId, "smth strange cathed: $t")
+                Logger.log(loggerId, "something strange caught: $t")
             }
             ret.add(curAddr)
         }

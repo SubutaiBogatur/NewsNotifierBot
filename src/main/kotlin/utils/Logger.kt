@@ -13,7 +13,10 @@ class Logger {
 
         fun getStringTime() = LocalDateTime.now().format(DateTimeFormatter.ofPattern("uuuu-MM-dd--kk-mm"))
 
+        @Synchronized
         fun log(update: Update, text: String) = log(update.message.from.userName, text)
+
+        @Synchronized
         fun log(text: String) = log("????????????????????", text)
 
         @Synchronized

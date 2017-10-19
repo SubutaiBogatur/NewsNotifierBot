@@ -1,16 +1,34 @@
-import org.telegram.telegrambots.api.methods.send.SendMessage
 import models.News
 import models.Subscriber
-import org.telegram.telegrambots.api.objects.Update
+import org.telegram.telegrambots.api.methods.send.SendMessage
 import utils.Logger
 import java.io.*
 
 
 class SubscribersDispatcher {
 
-    val subscribers: MutableMap<String, Subscriber> // chatId -> subscriber
-    val onboardingSubscribers = mutableMapOf<String, Subscriber>() // chatId -> subscriber
+    private val subscribers: MutableMap<String, Subscriber> // chatId -> subscriber
+    private val onboardingSubscribers = mutableMapOf<String, Subscriber>() // chatId -> subscriber
 
+    init {
+        //let's load subscribers from memory
+        var subs: MutableMap<String, Subscriber> = mutableMapOf()
+        try {
+            ObjectInputStream(FileInputStream("stored-subscribers"))
+                    .use { subs = it.readObject() as MutableMap<String, Subscriber> }
+        } catch (e: Exception) {
+            Logger.log(e.toString())
+        }
+        subscribers = subs
+    }
+
+    private fun storeSubscribers() {
+        try {
+            ObjectOutputStream(FileOutputStream("stored-subscribers")).use { it.writeObject(subscribers) }
+        } catch (e: IOException) {
+            Logger.log(e.toString())
+        }
+    }
 
     /**
      * Add new subscriber and return true if it was added
@@ -87,6 +105,7 @@ class SubscribersDispatcher {
         for ((_, sub) in subscribers) {
             sb.append("${sub.username}, ")
         }
+        sb.delete(sb.length - 2, sb.length)
         sb.append(("]"))
         return sb.toString()
     }
@@ -115,24 +134,21 @@ class SubscribersDispatcher {
         storeSubscribers()
     }
 
-    init {
-        //let's load subscribers from memory
-        var subs: MutableMap<String, Subscriber> = mutableMapOf()
-        try {
-            ObjectInputStream(FileInputStream("stored-subscribers"))
-                    .use { subs = it.readObject() as MutableMap<String, Subscriber> }
-        } catch (e: Exception) {
-            Logger.log(e.toString())
+    /**
+     * Find chat for user with provided username and send text to it
+     */
+    @Synchronized
+    fun directMessage(bot: NewsNotifierBot, username: String, text: String) {
+        var neededChatId: String? = null
+        for ((chatId, sub) in subscribers) {
+            if (sub.username == username) {
+                neededChatId = chatId
+            }
         }
-        subscribers = subs
-    }
-
-    fun storeSubscribers() {
-        try {
-            ObjectOutputStream(FileOutputStream("stored-subscribers")).use { it.writeObject(subscribers) }
-        } catch (e: IOException) {
-            Logger.log(e.toString())
+        if (neededChatId == null) {
+            return
         }
+        bot.sendMessage(SendMessage(neededChatId, text))
     }
 }
 

@@ -4,21 +4,23 @@ import utils.Logger
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
-class NewsNotifierServer(val bot: NewsNotifierBot) {
-    private val loggerId = "~server"
+class NewsNotifierServer(private val bot: NewsNotifierBot) {
 
-    val tpe = ScheduledThreadPoolExecutor(2)
+    // constants:
+    companion object {
+        private val loggerId = "~server"
+        private val MAX_NEW_NEWS = 5
+        private val ADMIN_PINGING_PERIOD: Long = 60 // minutes
+        private val THREADS = 2
+    }
 
-    val dataProvider = NewsProvider()
+    private val tpe = ScheduledThreadPoolExecutor(THREADS)
 
-    val CACHE_SIZE = 50 // per each address
-    val cache = mutableListOf<MutableSet<News>>()
-
-    val MAX_NEW_NEWS = 5
+    private val dataProvider = NewsProvider()
+    private var cache = mutableListOf<MutableSet<News>>()
 
     init {
-        (1..utils.newsSources.size)
-                .forEach({ cache.add(mutableSetOf()) })
+        (1..utils.newsSources.size).forEach({ cache.add(mutableSetOf()) })
     }
 
     /**
@@ -29,27 +31,31 @@ class NewsNotifierServer(val bot: NewsNotifierBot) {
      * Total size is guaranteed to be not more, than MAX_NEW_NEWS
      */
     fun checkNewNews() {
-        Logger.log(loggerId, "checkNew news called")
+        Logger.log(loggerId, "checkNewNews called")
 
         val allNewNews = dataProvider.getCurrentNews(utils.newsSources)
 
+        // if cache is empty, let's initialize it
         if (cache.stream().allMatch({ it.isEmpty() })) {
-            // if cache is empty, let's initialize it
             cache.forEachIndexed({ i, set -> set.addAll(allNewNews[i]) })
             Logger.log(loggerId, "Cache initialized and not announced")
             return
         }
 
+        val newCache = mutableListOf<MutableSet<News>>()
         var newNews = mutableListOf<MutableList<News>>()
+
         for (i in 0 until allNewNews.size) {
             newNews.add(mutableListOf())
+            newCache.add(mutableSetOf())
             allNewNews[i].forEach({
-                if (cache[i].add(it)) {
+                newCache[i].add(it)
+                if (!cache[i].contains(it)) {
                     newNews[i].add(it)
                 }
             })
-            //todo: reduce size of cache
         }
+        cache = newCache // update cache, so it's not too big
 
         //don't send too much data
         newNews = reduceNewNewsSize(newNews)
@@ -64,14 +70,14 @@ class NewsNotifierServer(val bot: NewsNotifierBot) {
         if (newNews.stream().map { it.size }.reduce({ a, b -> a + b }).get() > MAX_NEW_NEWS) {
             val lessNews = mutableListOf<MutableList<News>>()
             var curSize = 0
-            outerloop@ for (l in newNews) {
+            outer@ for (l in newNews) {
                 val newList = mutableListOf<News>()
                 lessNews.add(newList)
                 for (news in l) {
                     newList.add(news)
                     curSize++
                     if (curSize >= MAX_NEW_NEWS) {
-                        break@outerloop
+                        break@outer
                     }
                 }
             }
@@ -80,12 +86,18 @@ class NewsNotifierServer(val bot: NewsNotifierBot) {
         return newNews
     }
 
+    fun informAboutBeingActive() {
+        utils.admins.forEach {
+            bot.subscribersDispatcher.directMessage(bot, it,
+                    "Bot is still being active, don't worry. Users are: ${bot.subscribersDispatcher.getSubscribersString()}")
+        }
+    }
+
     /**
      * Start repeating calls to provide new news to bot
      */
     fun start(periodInSeconds: Long) {
         Logger.log(loggerId, "server started with period: $periodInSeconds")
-        //todo: maybe should schedule repeating notification about server still being active (both for me & other users)
         tpe.scheduleAtFixedRate({
             try {
                 checkNewNews()
@@ -93,6 +105,14 @@ class NewsNotifierServer(val bot: NewsNotifierBot) {
                 Logger.log(loggerId, t.toString())
             }
         }, 0, periodInSeconds, TimeUnit.SECONDS)
+
+        tpe.scheduleAtFixedRate({
+            try {
+                informAboutBeingActive()
+            } catch (t: Throwable) {
+                Logger.log(loggerId, t.toString())
+            }
+        }, 0, ADMIN_PINGING_PERIOD, TimeUnit.MINUTES)
     }
 
     fun stop() {

@@ -8,14 +8,31 @@ import org.telegram.telegrambots.api.objects.User
 import org.telegram.telegrambots.bots.TelegramLongPollingBot
 
 class NewsNotifierBot : TelegramLongPollingBot() {
-    private val subscribersDispatcher = SubscribersDispatcher()
+    val subscribersDispatcher = SubscribersDispatcher()
 
-    override fun getBotToken(): String {
-        return "460715821:AAErvovpexiD6Kb2mMluAtCoJKu3ER14ux8"
-    }
+    override fun getBotToken() = "460715821:AAErvovpexiD6Kb2mMluAtCoJKu3ER14ux8"
+    override fun getBotUsername() = "NewsNotifierBot"
 
-    override fun getBotUsername(): String {
-        return "NewsNotifierBot"
+    override fun onUpdateReceived(update: Update?) {
+        if (update == null) {
+            log("WARNING: received onUpdate call with null")
+            return
+        }
+        log(update, update.message.text)
+
+        if (update.message.isCommand) {
+            when (update.message.entities.first { it.type == EntityType.BOTCOMMAND }.text) {
+                "/s" -> subscribe(update.message.from, update.message.chat)
+                "/u" -> unsubscribe(update.message.from, update.message.chat)
+                "/lsu" -> listSubscribers(update)
+                "/help" -> help(update)
+                "/start" -> sendMessage(SendMessage(update.message.chatId.toString(), "Consider entering /help command"))
+                "/ls" -> listSubstrings(update)
+                "/as" -> addSubstring(update)
+                "/rs" -> removeSubstring(update)
+                "/rmrf" -> removeAllSubstrings(update)
+            }
+        }
     }
 
     private fun subscribe(user: User, chat: Chat) {
@@ -34,18 +51,14 @@ class NewsNotifierBot : TelegramLongPollingBot() {
         sendMessage(SendMessage(update.message.chatId.toString(), subscribersDispatcher.getSubscribersString()))
     }
 
+    @Synchronized
     fun announceNewData(newNews: List<List<News>>) {
         log("For clients ${subscribersDispatcher.getSubscribersString()} ${newNews.stream().map { it.size }.reduce({ a, b -> a + b }).get()} new news are dispatched")
         subscribersDispatcher.sendAll(this, newNews)
     }
 
-    private fun help(update: Update) {
-        sendMessage(SendMessage(update.message.chatId.toString(), utils.helpMessage))
-    }
-
-    private fun listSubstrings(update: Update) {
-        subscribersDispatcher.listSubstrings(this, update.message.chatId.toString())
-    }
+    private fun help(update: Update) = sendMessage(SendMessage(update.message.chatId.toString(), utils.helpMessage))
+    private fun listSubstrings(update: Update) = subscribersDispatcher.listSubstrings(this, update.message.chatId.toString())
 
     /**
      * Throws exception if unable to extract substring
@@ -78,29 +91,5 @@ class NewsNotifierBot : TelegramLongPollingBot() {
         }
     }
 
-    private fun removeAllSubstrings(update: Update) {
-        subscribersDispatcher.removeAllSubstrings(update.message.chatId.toString())
-    }
-
-    override fun onUpdateReceived(update: Update?) {
-        if (update == null) {
-            log("WARNING: received onUpdate call with null")
-            return
-        }
-        log(update, update.message.text)
-
-        if (update.message.isCommand) {
-            when (update.message.entities.first { it.type == EntityType.BOTCOMMAND }.text) {
-                "/s" -> subscribe(update.message.from, update.message.chat)
-                "/u" -> unsubscribe(update.message.from, update.message.chat)
-                "/lsu" -> listSubscribers(update)
-                "/help" -> help(update)
-                "/start" -> sendMessage(SendMessage(update.message.chatId.toString(), "Consider entering /help command"))
-                "/ls" -> listSubstrings(update)
-                "/as" -> addSubstring(update)
-                "/rs" -> removeSubstring(update)
-                "/rm-rf" -> removeAllSubstrings(update)
-            }
-        }
-    }
+    private fun removeAllSubstrings(update: Update) = subscribersDispatcher.removeAllSubstrings(update.message.chatId.toString())
 }

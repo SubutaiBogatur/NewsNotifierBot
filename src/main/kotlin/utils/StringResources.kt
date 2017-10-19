@@ -4,8 +4,8 @@ val newsSources = listOf(
         "http://www.sfgate.com/rss/feed/Business-and-Technology-News-448.php",
         "http://www.sfgate.com/bayarea/feed/Bay-Area-News-429.php",
         "http://www.sfgate.com/rss/feed/Top-News-Stories-595.php",
-        "http://www.latimes.com/local/rss2.0.xml",
-        "http://lorem-rss.herokuapp.com/feed?unit=second&interval=30"
+        "http://www.latimes.com/local/rss2.0.xml"
+//        "http://lorem-rss.herokuapp.com/feed?unit=second&interval=30"
 )
 
 val helpMessage = """
@@ -22,7 +22,7 @@ val helpMessage = """
         /ls = list current substrings
         /as = add substring
         /rs = remove substring
-        /rm-rf = remove all substrings
+        /rmrf = remove all substrings
         /help = show this message
 
         For commands manipulating substrings, substrings should be provided in quotes. Moreover, when looking for occurrences of substrings in news, case is ignored.
@@ -44,3 +44,7 @@ val onboardingMessage = """
 
         Starting from this message and till you unsubscribe you will get messages as soon as new news matching your interests appear
     """.trimIndent()
+
+val admins = listOf(
+        "alex_tukallo"
+)
