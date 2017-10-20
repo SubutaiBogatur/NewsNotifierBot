@@ -104,7 +104,9 @@ class SubscribersDispatcher {
         for ((_, sub) in subscribers) {
             sb.append("${sub.username}, ")
         }
-        sb.delete(sb.length - 2, sb.length)
+        if (sb.length > 2) {
+            sb.delete(sb.length - 2, sb.length)
+        }
         sb.append(("]"))
         return sb.toString()
     }
