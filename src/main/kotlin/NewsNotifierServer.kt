@@ -1,6 +1,7 @@
 import models.News
 import newsproviders.NewsProvider
 import utils.Logger
+import java.util.*
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
@@ -8,7 +9,7 @@ class NewsNotifierServer(private val bot: NewsNotifierBot) {
 
     // constants:
     companion object {
-        private val loggerId = "~server"
+        private val loggerId = "server"
         private val MAX_NEW_NEWS = 5
         private val ADMIN_PINGING_PERIOD: Long = 60 // minutes
         private val THREADS = 2
@@ -102,7 +103,7 @@ class NewsNotifierServer(private val bot: NewsNotifierBot) {
             try {
                 checkNewNews()
             } catch (t: Throwable) {
-                Logger.log(loggerId, t.toString())
+                Logger.log(Logger.SEVERE_TAG, t.toString() + " stacktrace: " + Arrays.toString(t.stackTrace))
             }
         }, 0, periodInSeconds, TimeUnit.SECONDS)
 
@@ -110,7 +111,7 @@ class NewsNotifierServer(private val bot: NewsNotifierBot) {
             try {
                 informAboutBeingActive()
             } catch (t: Throwable) {
-                Logger.log(loggerId, t.toString())
+                Logger.log(Logger.SEVERE_TAG, t.toString() + " stacktrace: " + Arrays.toString(t.stackTrace))
             }
         }, 0, ADMIN_PINGING_PERIOD, TimeUnit.MINUTES)
     }

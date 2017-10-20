@@ -48,3 +48,7 @@ val onboardingMessage = """
 val admins = listOf(
         "alex_tukallo"
 )
+
+val detailed_logging = listOf(
+        "chatid"
+)

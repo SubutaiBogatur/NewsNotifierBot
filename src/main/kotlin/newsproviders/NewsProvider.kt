@@ -38,11 +38,11 @@ class NewsProvider {
                                     address)
                         }
             } catch (e: URISyntaxException) {
-                Logger.log(loggerId, "uri syntax exception: $e")
+                Logger.log("~" + loggerId, "uri syntax exception: $e")
             } catch (e: IOException) {
-                Logger.log(loggerId, "io exception: $e")
+                Logger.log("~" + loggerId, "io exception: $e")
             } catch (t: Throwable) {
-                Logger.log(loggerId, "something strange caught: $t")
+                Logger.log("~" + loggerId, "something strange caught: $t")
             }
             ret.add(curAddr)
         }

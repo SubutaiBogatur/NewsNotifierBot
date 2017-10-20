@@ -1,6 +1,7 @@
 import models.News
 import models.Subscriber
 import org.telegram.telegrambots.api.methods.send.SendMessage
+import org.telegram.telegrambots.api.objects.Update
 import utils.Logger
 import java.io.*
 
@@ -111,9 +112,9 @@ class SubscribersDispatcher {
     }
 
     @Synchronized
-    fun listSubstrings(bot: NewsNotifierBot, chatId: String) {
-        val substrings = subscribers.get(chatId)?.substrings?.toString() ?: return
-        bot.sendMessage(SendMessage(chatId, "Your substrings:\n$substrings"))
+    fun listSubstrings(bot: NewsNotifierBot, update: Update) {
+        val substrings = subscribers.get(update.message.chatId.toString())?.substrings?.toString() ?: return
+        bot.sendMessage(update, "Your substrings:\n$substrings")
     }
 
     @Synchronized

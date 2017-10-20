@@ -1,12 +1,12 @@
 import models.News
 import utils.Logger.Companion.log
 import org.telegram.telegrambots.api.methods.send.SendMessage
-import org.telegram.telegrambots.api.objects.Chat
 import org.telegram.telegrambots.api.objects.EntityType
 import org.telegram.telegrambots.api.objects.Update
-import org.telegram.telegrambots.api.objects.User
 import org.telegram.telegrambots.bots.TelegramLongPollingBot
 import utils.Logger
+import utils.detailed_logging
+import java.util.*
 
 class NewsNotifierBot : TelegramLongPollingBot() {
     val subscribersDispatcher = SubscribersDispatcher()
@@ -17,23 +17,25 @@ class NewsNotifierBot : TelegramLongPollingBot() {
     override fun onUpdateReceived(update: Update?) {
         try {
             if (update == null) {
-                log("WARNING: received onUpdate call with null")
+                log("~WARNING: received onUpdate call with null")
                 return
             }
 
             if (update.message.from.userName == null) {
-                sendMessage(SendMessage(update.message.chatId, "Sorry, but to interact with the bot your username should be not null"))
+                sendMessageWithoutLogging(update.message.chatId.toString(),
+                        "Sorry, but to interact with the bot your username should be not null")
+                log("~WARNING: guy with chatId: ${update.message.chatId} has no username")
             }
 
             log(update, update.message.text)
 
             if (update.message.isCommand) {
                 when (update.message.entities.first { it.type == EntityType.BOTCOMMAND }.text) {
-                    "/s" -> subscribe(update.message.from, update.message.chat)
-                    "/u" -> unsubscribe(update.message.from, update.message.chat)
+                    "/s" -> subscribe(update)
+                    "/u" -> unsubscribe(update)
                     "/lsu" -> listSubscribers(update)
                     "/help" -> help(update)
-                    "/start" -> sendMessage(SendMessage(update.message.chatId.toString(), "Consider entering /help command"))
+                    "/start" -> sendMessage(update, "Consider entering /help command")
                     "/ls" -> listSubstrings(update)
                     "/as" -> addSubstring(update)
                     "/rs" -> removeSubstring(update)
@@ -41,24 +43,24 @@ class NewsNotifierBot : TelegramLongPollingBot() {
                 }
             }
         } catch (t: Throwable) {
-            Logger.Companion.log("CRITICAL~ERROR", t.toString())
+            log(Logger.SEVERE_TAG, t.toString() + " st: " + Arrays.toString(t.stackTrace))
         }
     }
 
-    private fun subscribe(user: User, chat: Chat) {
-        val subscribed = subscribersDispatcher.addSubscriber(chat.id.toString(), user.userName)
-        log(user.userName, "subscribed ${if (!subscribed) "though was already" else ""}")
-        sendMessage(SendMessage(chat.id.toString(), "You are subscribed"))
+    private fun subscribe(update: Update) {
+        val subscribed = subscribersDispatcher.addSubscriber(update.message.chatId.toString(), update.message.from.userName)
+        log(update.message.from.userName, "subscribed ${if (!subscribed) "though was already" else ""}")
+        sendMessage(update, "You are subscribed")
     }
 
-    private fun unsubscribe(user: User, chat: Chat) {
-        val unsubscribed = subscribersDispatcher.removeSubscriber(chat.id.toString())
-        log(user.userName, "unsubscribed ${if (!unsubscribed) "though wasn't subscribed" else ""}")
-        sendMessage(SendMessage(chat.id.toString(), "You are unsubscribed"))
+    private fun unsubscribe(update: Update) {
+        val unsubscribed = subscribersDispatcher.removeSubscriber(update.message.chat.id.toString())
+        log(update.message.from.userName, "unsubscribed ${if (!unsubscribed) "though wasn't subscribed" else ""}")
+        sendMessage(update, "You are unsubscribed")
     }
 
     private fun listSubscribers(update: Update) {
-        sendMessage(SendMessage(update.message.chatId.toString(), subscribersDispatcher.getSubscribersString()))
+        sendMessage(update, subscribersDispatcher.getSubscribersString())
     }
 
     @Synchronized
@@ -67,8 +69,8 @@ class NewsNotifierBot : TelegramLongPollingBot() {
         subscribersDispatcher.sendAll(this, newNews)
     }
 
-    private fun help(update: Update) = sendMessage(SendMessage(update.message.chatId.toString(), utils.helpMessage))
-    private fun listSubstrings(update: Update) = subscribersDispatcher.listSubstrings(this, update.message.chatId.toString())
+    private fun help(update: Update) = sendMessage(update, utils.helpMessage)
+    private fun listSubstrings(update: Update) = subscribersDispatcher.listSubstrings(this, update)
 
     /**
      * Throws exception if unable to extract substring
@@ -88,7 +90,7 @@ class NewsNotifierBot : TelegramLongPollingBot() {
             val ss = extractSubstring(update)
             subscribersDispatcher.addSubstring(update.message.chatId.toString(), ss)
         } catch (e: IllegalArgumentException) {
-            sendMessage(SendMessage(update.message.chatId.toString(), "Error: " + e.message))
+            sendMessage(update, "Error: " + e.message)
         }
     }
 
@@ -97,9 +99,26 @@ class NewsNotifierBot : TelegramLongPollingBot() {
             val ss = extractSubstring(update)
             subscribersDispatcher.removeSubstring(update.message.chatId.toString(), ss)
         } catch (e: IllegalArgumentException) {
-            sendMessage(SendMessage(update.message.chatId.toString(), "Error: " + e.message))
+            sendMessage(update, "Error: " + e.message)
         }
     }
 
     private fun removeAllSubstrings(update: Update) = subscribersDispatcher.removeAllSubstrings(update.message.chatId.toString())
+
+    fun sendMessage(update: Update, text: String) {
+        sendMessage(update.message.chatId.toString(), update.message.from.userName, text)
+    }
+
+    // function sends the message and does logging
+    fun sendMessage(chatId: String, username: String, text: String) {
+        if (username in detailed_logging) {
+            log(username, "Message sent: $text")
+        }
+        sendMessageWithoutLogging(chatId, text)
+    }
+
+    // consider not using this function directly
+    private fun sendMessageWithoutLogging(chatId: String, text: String) {
+        sendMessage(SendMessage(chatId, text))
+    }
 }

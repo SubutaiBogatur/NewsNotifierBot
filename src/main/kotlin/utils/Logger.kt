@@ -10,6 +10,7 @@ import java.time.format.DateTimeFormatter
 class Logger {
     companion object {
         private val logWriter = PrintWriter(OutputStreamWriter(FileOutputStream("botLog-${getStringTime()}.txt")))
+        val SEVERE_TAG = "~SEVERE"
 
         fun getStringTime() = LocalDateTime.now().format(DateTimeFormatter.ofPattern("uuuu-MM-dd--kk-mm"))
 
