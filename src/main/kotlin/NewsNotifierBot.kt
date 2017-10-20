@@ -5,6 +5,7 @@ import org.telegram.telegrambots.api.objects.EntityType
 import org.telegram.telegrambots.api.objects.Update
 import org.telegram.telegrambots.bots.TelegramLongPollingBot
 import utils.Logger
+import utils.Logger.Companion.logException
 import utils.detailed_logging
 import java.util.*
 
@@ -43,7 +44,7 @@ class NewsNotifierBot : TelegramLongPollingBot() {
                 }
             }
         } catch (t: Throwable) {
-            log(Logger.SEVERE_TAG, t.toString() + " st: " + Arrays.toString(t.stackTrace))
+            logException(t)
         }
     }
 

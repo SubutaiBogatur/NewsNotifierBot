@@ -1,7 +1,6 @@
 import models.News
 import newsproviders.NewsProvider
 import utils.Logger
-import java.util.*
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
@@ -97,23 +96,19 @@ class NewsNotifierServer(private val bot: NewsNotifierBot) {
     /**
      * Start repeating calls to provide new news to bot
      */
-    fun start(periodInSeconds: Long) {
-        Logger.log(loggerId, "server started with period: $periodInSeconds")
-        tpe.scheduleAtFixedRate({
-            try {
-                checkNewNews()
-            } catch (t: Throwable) {
-                Logger.log(Logger.SEVERE_TAG, t.toString() + " stacktrace: " + Arrays.toString(t.stackTrace))
-            }
-        }, 0, periodInSeconds, TimeUnit.SECONDS)
+    fun start(newsUpdatePeriodSeconds: Long) {
+        fun scheduleTpe(f: () -> Unit, period: Long, timeUnit: TimeUnit) =
+                tpe.scheduleAtFixedRate({
+                    try {
+                        f()
+                    } catch (t: Throwable) {
+                        Logger.logException(t)
+                    }
+                }, 0, period, timeUnit)
 
-        tpe.scheduleAtFixedRate({
-            try {
-                informAboutBeingActive()
-            } catch (t: Throwable) {
-                Logger.log(Logger.SEVERE_TAG, t.toString() + " stacktrace: " + Arrays.toString(t.stackTrace))
-            }
-        }, 0, ADMIN_PINGING_PERIOD, TimeUnit.MINUTES)
+        Logger.log(loggerId, "server started with period: $newsUpdatePeriodSeconds")
+        scheduleTpe({ checkNewNews() }, newsUpdatePeriodSeconds, TimeUnit.SECONDS)
+        scheduleTpe({ informAboutBeingActive() }, ADMIN_PINGING_PERIOD, TimeUnit.MINUTES)
     }
 
     fun stop() {

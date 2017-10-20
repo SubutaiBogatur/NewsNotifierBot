@@ -6,11 +6,12 @@ import java.io.OutputStreamWriter
 import java.io.PrintWriter
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.*
 
 class Logger {
     companion object {
         private val logWriter = PrintWriter(OutputStreamWriter(FileOutputStream("botLog-${getStringTime()}.txt")))
-        val SEVERE_TAG = "~SEVERE"
+        private val SEVERE_TAG = "~SEVERE"
 
         fun getStringTime() = LocalDateTime.now().format(DateTimeFormatter.ofPattern("uuuu-MM-dd--kk-mm"))
 
@@ -26,6 +27,11 @@ class Logger {
             logWriter.println(msg)
             logWriter.flush()
             println(msg)
+        }
+
+        @Synchronized
+        fun logException(t: Throwable) {
+            log(SEVERE_TAG, "$t. Stack trace: ${Arrays.toString(t.stackTrace)}")
         }
     }
 }

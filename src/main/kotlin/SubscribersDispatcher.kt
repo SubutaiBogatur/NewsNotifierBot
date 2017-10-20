@@ -18,7 +18,7 @@ class SubscribersDispatcher {
             ObjectInputStream(FileInputStream("stored-subscribers"))
                     .use { subs = it.readObject() as MutableMap<String, Subscriber> }
         } catch (e: Exception) {
-            Logger.log(e.toString())
+            Logger.logException(e)
         }
         subscribers = subs
     }
@@ -26,8 +26,8 @@ class SubscribersDispatcher {
     private fun storeSubscribers() {
         try {
             ObjectOutputStream(FileOutputStream("stored-subscribers")).use { it.writeObject(subscribers) }
-        } catch (e: IOException) {
-            Logger.log(e.toString())
+        } catch (e: Exception) {
+            Logger.logException(e)
         }
     }
 
@@ -63,22 +63,20 @@ class SubscribersDispatcher {
 
     @Synchronized
     fun sendAll(bot: NewsNotifierBot, text: String) {
-        subscribers.forEach({ (_, sub) -> bot.sendMessage(SendMessage(sub.chatId, text)) })
+        subscribers.forEach({ (_, sub) -> bot.sendMessage(sub.chatId, sub.username, text) })
     }
 
     @Synchronized
     fun sendAll(bot: NewsNotifierBot, newNews: List<List<News>>) {
-        for (entries in subscribers) {
-            val subscriber = entries.value
-
+        for ((_, subscriber) in subscribers) {
             if (subscriber.chatId in onboardingSubscribers) {
-                bot.sendMessage(SendMessage(subscriber.chatId, utils.onboardingMessage))
+                bot.sendMessage(subscriber.chatId, subscriber.username, utils.onboardingMessage)
             }
 
             for (newsFromOneAddress in newNews) {
                 if (subscriber.substrings.isEmpty()) {
                     newsFromOneAddress.forEach {
-                        bot.sendMessage(SendMessage(subscriber.chatId, it.getMessage("you are subscribed to all the substrings")))
+                        bot.sendMessage(subscriber.chatId, subscriber.username, it.getMessage("you are subscribed to all the substrings"))
                     }
                 } else {
                     val metSubstrings = mutableMapOf<News, String>() // title -> first encountered substring
@@ -91,7 +89,7 @@ class SubscribersDispatcher {
                     }
                     // now the map contains all the filtered news and corresponding substring for them
                     for ((news, substring) in metSubstrings) {
-                        bot.sendMessage(SendMessage(subscriber.chatId, news.getMessage(substring)))
+                        bot.sendMessage(subscriber.chatId, subscriber.username, news.getMessage(substring))
                     }
                 }
             }
@@ -149,7 +147,7 @@ class SubscribersDispatcher {
         if (neededChatId == null) {
             return
         }
-        bot.sendMessage(SendMessage(neededChatId, text))
+        bot.sendMessage(neededChatId, username, text)
     }
 }
 
