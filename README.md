@@ -23,4 +23,6 @@ Each user may specify range of topics he is interested in. It is done via manipu
 
 Bot may be used to be immediately informed about up-to-date news and, for example, then recent public news may be used to do stocks trading.
 
+Bot Link: https://t.me/newsnotifierbot
+
 Copyright 2017 Aleksandr Tukallo
