@@ -24,4 +24,20 @@ data class News(val title: String,
         sb.append(getMessage())
         return sb.toString()
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (other == null) {
+            return false
+        }
+
+        if (other !is News) {
+            return false
+        }
+
+        return title == other.title
+    }
+
+    override fun hashCode(): Int {
+        return title.hashCode()
+    }
 }
